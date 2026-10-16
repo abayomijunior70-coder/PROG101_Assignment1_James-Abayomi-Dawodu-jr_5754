@@ -15,3 +15,17 @@ flowchart TD
     I -- No --> J{choice = 5?}
     J -- Yes --> J1[ReorderList] --> B
     J -- No --> K[/Display Invalid choice/] --> B
+
+flowchart TD
+    A([Start]) --> B[/Input name, amount/]
+    B --> C[FindMedicine]
+    C --> D{Found?}
+    D -- No --> E[/Display Not found/] --> Z([End])
+    D -- Yes --> F{Expired?}
+    F -- Yes --> G[/Display Cannot dispense expired/] --> Z
+    F -- No --> H{amount > 0 AND amount <= quantity?}
+    H -- No --> I[/Display Invalid amount/] --> Z
+    H -- Yes --> J[quantity = quantity - amount]
+    J --> K{quantity <= minLevel?}
+    K -- Yes --> L[/Display low stock ALERT/] --> Z
+    K -- No --> Z
