@@ -29,3 +29,13 @@ flowchart TD
     J --> K{quantity <= minLevel?}
     K -- Yes --> L[/Display low stock ALERT/] --> Z
     K -- No --> Z
+
+flowchart TD
+    A([Start]) --> B[i = 0]
+    B --> C{i < number of medicines?}
+    C -- No --> Z([End])
+    C -- Yes --> D[status = GetStatus of medicine i]
+    D --> E{status is not OK?}
+    E -- Yes --> F[/Display name and status/] --> G[i = i + 1]
+    E -- No --> G
+    G --> C
