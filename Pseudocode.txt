@@ -1,0 +1,104 @@
+CONSTANT LOW_STOCK_PERCENT = 25
+CONSTANT EXPIRY_WARNING_DAYS = 30
+
+DECLARE medicines AS LIST OF RECORD (name: TEXT, quantity: INTEGER,
+        minLevel: INTEGER, maxLevel: INTEGER, expiry: DATE)
+
+FUNCTION GetStatus(med, today) RETURNS TEXT
+    daysLeft = DaysBetween(today, med.expiry)
+    IF daysLeft < 0 THEN
+        RETURN "EXPIRED"
+    ELSE IF med.quantity = 0 THEN
+        RETURN "OUT OF STOCK"
+    ELSE IF med.quantity <= med.minLevel THEN
+        RETURN "LOW STOCK"
+    ELSE IF daysLeft <= EXPIRY_WARNING_DAYS THEN
+        RETURN "EXPIRING SOON"
+    ELSE
+        RETURN "OK"
+    END IF
+END FUNCTION
+
+FUNCTION CalculateReorder(med) RETURNS INTEGER
+    RETURN med.maxLevel - med.quantity
+END FUNCTION
+
+FUNCTION FindMedicine(name) RETURNS RECORD OR NULL
+    FOR EACH med IN medicines
+        IF med.name = name THEN RETURN med
+    END FOR
+    RETURN NULL
+END FUNCTION
+
+PROCEDURE AddMedicine()
+    INPUT name, quantity, minLevel, maxLevel, expiry
+    IF quantity < 0 OR minLevel < 0 OR minLevel >= maxLevel THEN
+        DISPLAY "Invalid values"
+    ELSE
+        APPEND record TO medicines
+        DISPLAY "Medicine added"
+    END IF
+END PROCEDURE
+
+PROCEDURE ReceiveStock()
+    INPUT name, amount
+    med = FindMedicine(name)
+    IF med = NULL THEN
+        DISPLAY "Medicine not found"
+    ELSE IF amount <= 0 THEN
+        DISPLAY "Amount must be greater than zero"
+    ELSE
+        med.quantity = med.quantity + amount
+    END IF
+END PROCEDURE
+
+PROCEDURE DispenseMedicine(today)
+    INPUT name, amount
+    med = FindMedicine(name)
+    IF med = NULL THEN
+        DISPLAY "Medicine not found"
+    ELSE IF GetStatus(med, today) = "EXPIRED" THEN
+        DISPLAY "Cannot dispense expired medicine"
+    ELSE IF amount <= 0 OR amount > med.quantity THEN
+        DISPLAY "Invalid amount. Available: ", med.quantity
+    ELSE
+        med.quantity = med.quantity - amount
+        IF med.quantity <= med.minLevel THEN
+            DISPLAY "ALERT: ", med.name, " is low"
+        END IF
+    END IF
+END PROCEDURE
+
+PROCEDURE CheckAlerts(today)
+    FOR EACH med IN medicines
+        status = GetStatus(med, today)
+        IF status <> "OK" THEN
+            DISPLAY med.name, status
+        END IF
+    END FOR
+END PROCEDURE
+
+PROCEDURE ReorderList()
+    FOR EACH med IN medicines
+        IF med.quantity <= med.minLevel THEN
+            DISPLAY med.name, CalculateReorder(med)
+        END IF
+    END FOR
+END PROCEDURE
+
+PROCEDURE Main()
+    choice = -1
+    WHILE choice <> 0
+        DISPLAY menu
+        INPUT choice
+        IF choice = 1 THEN AddMedicine()
+        ELSE IF choice = 2 THEN ReceiveStock()
+        ELSE IF choice = 3 THEN DispenseMedicine(Today())
+        ELSE IF choice = 4 THEN CheckAlerts(Today())
+        ELSE IF choice = 5 THEN ReorderList()
+        ELSE IF choice = 6 THEN ShowReport(Today())
+        ELSE IF choice <> 0 THEN DISPLAY "Invalid choice"
+        END IF
+    END WHILE
+    SaveData()
+END PROCEDURE
